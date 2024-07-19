@@ -1,1 +1,2 @@
-app/node_modules
+app/chat-app-backend/node_modules
+app/chat-app-frontend/node_modules
