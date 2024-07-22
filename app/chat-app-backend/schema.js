@@ -1,6 +1,8 @@
 const { GraphQLObjectType, GraphQLSchema, GraphQLString, GraphQLID, GraphQLList } = require('graphql');
 const UserType = require('./types/user');
+const MessageType = require('./types/message');
 const User = require('./models/user');
+const Message = require('./models/message');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -9,18 +11,32 @@ const RootQuery = new GraphQLObjectType({
   fields: {
     user: {
       type: UserType,
-      args: { id: { type: GraphQLID } },
+      args: { email: { type: GraphQLString } , id: { type: GraphQLID } },
       resolve(parent, args) {
-        return User.findById(args.id);
+        if(!args.id && !args.email) {
+          throw new Error('Please provide an id or email');
+        }
+        if (args.id) {
+          return User.findById(args.id);
+        }elseif(args.email)
+        {
+        return User.findOne(email == args.email);
+        }
       }
     },
-    users: {
+       users: {
       type: new GraphQLList(UserType),
       resolve(parent, args, context) {
         if (!context.isAuth) {
           throw new Error('Not authenticated');
         }
         return User.find();
+      }
+    },
+    messages: {
+      type: new GraphQLList(MessageType),
+      resolve(parent, args) {
+        return Message.find().sort({ createdAt: -1 }).limit(50);
       }
     }
   }
@@ -47,7 +63,13 @@ const Mutation = new GraphQLObjectType({
       }
     },
     login: {
-      type: GraphQLString,
+      type: new GraphQLObjectType({
+        name: 'LoginResponse',
+        fields: {
+          token: { type: GraphQLString },
+          user: { type: UserType }
+        }
+      }),
       args: {
         email: { type: GraphQLString },
         password: { type: GraphQLString }
@@ -64,7 +86,21 @@ const Mutation = new GraphQLObjectType({
         const token = jwt.sign({ userId: user.id }, 'somesecretkey', {
           expiresIn: '1h'
         });
-        return token;
+        return { token, user };
+      }
+    },
+    addMessage: {
+      type: MessageType,
+      args: {
+        content: { type: GraphQLString },
+        userId: { type: GraphQLID }
+      },
+      resolve(parent, args) {
+        const message = new Message({
+          content: args.content,
+          userId: args.userId
+        });
+        return message.save();
       }
     }
   }

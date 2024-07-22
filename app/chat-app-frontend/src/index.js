@@ -1,11 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { ApolloProvider } from '@apollo/react-hooks';
-import ApolloClient from 'apollo-boost';
+import { ApolloProvider, InMemoryCache, ApolloClient } from '@apollo/client';
 import App from './App';
+import './index.css';
 
 const client = new ApolloClient({
   uri: 'http://localhost:4000/graphql',
+  cache: new InMemoryCache(),
   request: (operation) => {
     const token = localStorage.getItem('token');
     operation.setContext({
@@ -22,3 +23,5 @@ ReactDOM.render(
   </ApolloProvider>,
   document.getElementById('root')
 );
+
+
